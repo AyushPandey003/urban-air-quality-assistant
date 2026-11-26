@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// CSP forbids dynamic evaluation. Avoid Zod's optional JIT capability probe entirely,
+// rather than triggering a caught policy violation or allowing unsafe-eval.
+z.config({ jitless: true });
+
 const Timestamp = z.string().datetime();
 export const ReadingSchema = z.object({
   location: z.string().min(1),

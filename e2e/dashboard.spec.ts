@@ -155,6 +155,7 @@ test('serves a same-origin module worker and renders the heatmap without worker 
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
+  await page.locator('#map-viewport').scrollIntoViewIfNeeded();
   const worker =
     page.workers().find((candidate) => candidate.url().includes('/vendor/maplibre-worker.mjs')) ??
     (await page.waitForEvent('worker', {
@@ -180,10 +181,22 @@ test('loads static assets under the GitHub Pages subpath without runtime errors'
 }) => {
   const failures: string[] = [];
   page.on('pageerror', (error) => failures.push(error.message));
+  await page.addInitScript(() => {
+    const violations: string[] = [];
+    Object.assign(window, { airspaceCspViolations: violations });
+    document.addEventListener('securitypolicyviolation', (event) => {
+      violations.push(`${event.effectiveDirective}: ${event.blockedURI}`);
+    });
+  });
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Air quality summary' })).toContainText(
     'Alpha station',
   );
   expect(failures).toEqual([]);
+  expect(
+    await page.evaluate(
+      () => (window as Window & { airspaceCspViolations?: string[] }).airspaceCspViolations,
+    ),
+  ).toEqual([]);
 });

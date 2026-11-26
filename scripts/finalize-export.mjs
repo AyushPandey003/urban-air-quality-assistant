@@ -12,7 +12,8 @@ async function verifyDirectory(directory) {
       await verifyDirectory(path);
       continue;
     }
-    if (!['.html', '.js', '.mjs', '.json', '.txt', '.css'].includes(extname(path))) continue;
+    if (!['.html', '.js', '.mjs', '.map', '.json', '.txt', '.css'].includes(extname(path)))
+      continue;
     let text = await readFile(path, 'utf8');
     const key = process.env.OPENAQ_API_KEY;
     if (key && text.includes(key))

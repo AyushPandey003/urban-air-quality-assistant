@@ -9,6 +9,7 @@ import { AQIChart } from './AQIChart';
 import { AdvisoryPanel } from './AdvisoryPanel';
 import { AirQualityMetrics } from './AirQualityMetrics';
 import { LocationBar } from './LocationBar';
+import { NearViewport } from './NearViewport';
 import { StationList } from './StationList';
 import { VoiceAssistant } from './VoiceAssistant';
 
@@ -72,14 +73,23 @@ export function Dashboard() {
       <AirQualityMetrics readings={air.readings} selected={air.selected} loading={air.loading} />
       <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="flex min-w-0 flex-col gap-6">
-          <MapView
-            latitude={city.location.latitude}
-            longitude={city.location.longitude}
-            readings={air.readings}
-            selected={air.selected}
-            onSelect={selectStation}
-            loading={air.loading}
-          />
+          <NearViewport
+            id="map-viewport"
+            fallback={
+              <div className="panel grid h-[610px] place-items-center" role="status">
+                The map loads as you scroll.
+              </div>
+            }
+          >
+            <MapView
+              latitude={city.location.latitude}
+              longitude={city.location.longitude}
+              readings={air.readings}
+              selected={air.selected}
+              onSelect={selectStation}
+              loading={air.loading}
+            />
+          </NearViewport>
           <StationList
             key={city.location.name}
             readings={air.readings}

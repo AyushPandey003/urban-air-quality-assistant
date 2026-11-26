@@ -7,3 +7,8 @@ await copyFile(
   new URL('../node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url),
   new URL('../public/vendor/maplibre-worker.mjs', import.meta.url),
 );
+// Preserve the worker's existing sourceMappingURL filename.
+await copyFile(
+  new URL('../node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs.map', import.meta.url),
+  new URL('../public/vendor/maplibre-gl-worker.mjs.map', import.meta.url),
+);
