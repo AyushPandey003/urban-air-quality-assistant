@@ -3,14 +3,18 @@ import { buildOutlook, type HistoryPoint } from './outlook';
 
 const now = Date.parse('2026-11-26T08:00:00Z');
 function series(base: number): HistoryPoint[] {
-  return Array.from({ length: 48 }, (_, i) => ({ time: new Date(now - (47 - i) * 3600000).toISOString(), value: base + 3 * Math.sin(i / 3) }));
+  return Array.from({ length: 48 }, (_, i) => ({
+    time: new Date(now - (47 - i) * 3600000).toISOString(),
+    value: base + 3 * Math.sin(i / 3),
+  }));
 }
 describe('station outlook', () => {
-  it('does not invent a forecast without observations', () => expect(buildOutlook([], now)).toEqual([]));
+  it('does not invent a forecast without observations', () =>
+    expect(buildOutlook([], now)).toEqual([]));
   it('produces 24 future hourly estimates and ordered ranges', () => {
     const result = buildOutlook(series(20), now);
     expect(result).toHaveLength(24);
-    result.forEach(p => {
+    result.forEach((p) => {
       expect(p.time).toBeGreaterThan(now);
       expect(p.range[0]).toBeLessThanOrEqual(p.aqi);
       expect(p.range[1]).toBeGreaterThanOrEqual(p.aqi);

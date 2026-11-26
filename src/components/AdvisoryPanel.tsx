@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { advisoryFor, type HealthProfile } from '@/lib/aqi';
-import { motion } from 'framer-motion';
 
 const PROFILES: Array<{ id: HealthProfile; label: string }> = [
   { id: 'general', label: 'General' },
@@ -11,49 +10,44 @@ const PROFILES: Array<{ id: HealthProfile; label: string }> = [
   { id: 'elderly', label: 'Elderly' },
   { id: 'child', label: 'Child' },
 ];
-
 export function AdvisoryPanel({ aqi }: { aqi: number | null }) {
   const [profile, setProfile] = useState<HealthProfile>('general');
-
+  const group = useId();
   return (
-    <motion.section
-      aria-label="Personalized health advisory"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.1 }}
-      className="panel p-5"
-    >
-      <span className="eyebrow">A LITTLE CARE GOES A LONG WAY</span>
+    <section aria-label="Personalized health advisory" className="panel p-5">
+      <span className="eyebrow">A little care goes a long way</span>
       <h2 className="mb-4 mt-1 text-lg font-semibold">Plan your time outside</h2>
-
       <fieldset>
-        <legend className="sr-only">Choose your health profile</legend>
-        <div className="mb-3 flex flex-wrap gap-2" role="radiogroup">
-          {PROFILES.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              role="radio"
-              aria-checked={profile === p.id}
-              onClick={() => setProfile(p.id)}
-              className={
-                profile === p.id
-                  ? 'rounded-full bg-emerald-500 px-3 py-1.5 text-sm font-medium text-slate-950'
-                  : 'rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500'
-              }
-            >
-              {p.label}
-            </button>
+        <legend className="mb-3 text-xs text-slate-300">Choose your health profile</legend>
+        <div className="flex flex-wrap gap-2">
+          {PROFILES.map((option) => (
+            <label key={option.id} className="cursor-pointer">
+              <input
+                type="radio"
+                name={group}
+                value={option.id}
+                checked={profile === option.id}
+                onChange={() => setProfile(option.id)}
+                className="peer sr-only"
+              />
+              <span className="flex min-h-11 items-center rounded-full border border-slate-600 px-3 text-sm text-slate-200 peer-checked:border-emerald-400 peer-checked:bg-emerald-400 peer-checked:text-slate-950 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-teal-200">
+                {option.label}
+              </span>
+            </label>
           ))}
         </div>
       </fieldset>
-
-      <div className="mt-4 rounded-xl border border-teal-300/10 bg-teal-300/[0.04] p-4">
+      <div className="mt-4 rounded-xl border border-teal-300/15 bg-teal-300/[0.04] p-4">
         <p aria-live="polite" className="text-sm leading-relaxed text-slate-200">
-          {aqi === null ? 'Select a reporting station to see guidance for your health profile.' : advisoryFor(aqi, profile)}
+          {aqi === null
+            ? 'Choose a station with non-stale observations for indicative health guidance.'
+            : advisoryFor(aqi, profile)}
         </p>
       </div>
-      <p className="mt-3 text-[10px] leading-relaxed text-slate-500">Based on the selected station’s latest PM2.5 reading. Individual sensitivity varies; follow local health guidance.</p>
-    </motion.section>
+      <p className="mt-3 text-xs leading-relaxed text-slate-400">
+        Based on available PM2.5 observations, not a medical assessment. Individual sensitivity
+        varies; follow local health guidance and your clinician’s advice.
+      </p>
+    </section>
   );
 }

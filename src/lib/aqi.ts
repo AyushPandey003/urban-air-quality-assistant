@@ -4,38 +4,33 @@
  */
 
 export type AQIBand =
-  | 'good'
-  | 'moderate'
-  | 'sensitive'
-  | 'unhealthy'
-  | 'veryunhealthy'
-  | 'hazardous';
+  'good' | 'moderate' | 'sensitive' | 'unhealthy' | 'veryunhealthy' | 'hazardous';
 
-export interface Pollutant {
-  parameter: 'pm25' | 'pm10' | 'no2' | 'o3' | 'so2' | 'co';
-  value: number; // µg/m³ (ppm for CO is converted upstream)
-  unit: string;
-}
-
-/** US EPA breakpoints for PM2.5 (µg/m³, 24h) — most common reference. */
+/** US EPA PM2.5 breakpoints effective May 6, 2024 (µg/m³).
+ * Source: https://aqs.epa.gov/aqsweb/documents/codetables/aqi_breakpoints.html
+ * Apply to a 24-hour concentration or a PM NowCast, not an unqualified instant reading.
+ */
 const PM25_BREAKS: Array<[number, number, number, number]> = [
-  [0.0, 12.0, 0, 50],
-  [12.1, 35.4, 51, 100],
+  [0.0, 9.0, 0, 50],
+  [9.1, 35.4, 51, 100],
   [35.5, 55.4, 101, 150],
-  [55.5, 150.4, 151, 200],
-  [150.5, 250.4, 201, 300],
-  [250.5, 500.4, 301, 500],
+  [55.5, 125.4, 151, 200],
+  [125.5, 225.4, 201, 300],
+  [225.5, 325.4, 301, 500],
 ];
 
 /** Piecewise-linear US EPA conversion: pollutant concentration -> AQI. */
 export function concentrationToAQI(conc: number, breaks = PM25_BREAKS): number {
+  if (!Number.isFinite(conc) || conc < 0)
+    throw new RangeError('PM2.5 must be a finite, non-negative concentration');
+  conc = Math.floor((conc + Number.EPSILON) * 10) / 10;
   for (const [cLo, cHi, aLo, aHi] of breaks) {
     if (conc >= cLo && conc <= cHi) {
       const aqi = ((aHi - aLo) / (cHi - cLo)) * (conc - cLo) + aLo;
       return Math.round(aqi);
     }
   }
-  return conc > 500 ? 500 : 0;
+  return 500;
 }
 
 export function aqiToBand(aqi: number): AQIBand {
@@ -47,16 +42,13 @@ export function aqiToBand(aqi: number): AQIBand {
   return 'hazardous';
 }
 
-export const BAND_META: Record<
-  AQIBand,
-  { label: string; color: string; emoji: string }
-> = {
+export const BAND_META: Record<AQIBand, { label: string; color: string; emoji: string }> = {
   good: { label: 'Good', color: '#10b981', emoji: '😀' },
   moderate: { label: 'Moderate', color: '#f59e0b', emoji: '🙂' },
   sensitive: { label: 'Unhealthy for Sensitive Groups', color: '#f97316', emoji: '😷' },
   unhealthy: { label: 'Unhealthy', color: '#ef4444', emoji: '🤒' },
   veryunhealthy: { label: 'Very Unhealthy', color: '#a855f7', emoji: '😨' },
-  hazardous: { label: 'Hazardous', color: '#881337', emoji: '☠️' },
+  hazardous: { label: 'Hazardous', color: '#fb7185', emoji: '☠️' },
 };
 
 export type HealthProfile = 'general' | 'asthma' | 'athlete' | 'elderly' | 'child';
@@ -65,7 +57,7 @@ export function advisoryFor(aqi: number, profile: HealthProfile): string {
   const band = aqiToBand(aqi);
   const base: Record<HealthProfile, Record<AQIBand, string>> = {
     general: {
-      good: 'Air quality is excellent — perfect day to be outside.',
+      good: 'Air quality is generally acceptable. Consider local conditions and your own symptoms before outdoor activity.',
       moderate: 'Acceptable air. Unusually sensitive people should watch for symptoms.',
       sensitive: 'Sensitive individuals should reduce prolonged outdoor exertion.',
       unhealthy: 'Everyone may feel effects; sensitive groups should avoid outdoor exertion.',
@@ -73,11 +65,13 @@ export function advisoryFor(aqi: number, profile: HealthProfile): string {
       hazardous: 'Emergency conditions. Avoid all outdoor activity.',
     },
     asthma: {
-      good: 'Great day for you — enjoy outdoor activities.',
+      good: 'Pollution-related risk is generally low. Follow your asthma action plan and carry prescribed medication.',
       moderate: 'Carry your inhaler; symptoms possible with prolonged exertion.',
       sensitive: 'Keep rescue inhaler handy; consider moving exercise indoors.',
-      unhealthy: 'Stay indoors; asthma attacks likely outdoors.',
-      veryunhealthy: 'Do not go outside. Use prescribed preventers.',
+      unhealthy:
+        'Reduce outdoor exertion and follow your asthma action plan. Seek medical advice if symptoms worsen.',
+      veryunhealthy:
+        'Avoid outdoor exertion and follow your clinician’s advice and prescribed treatment.',
       hazardous: 'Remain indoors with windows closed. Seek medical help if symptoms appear.',
     },
     athlete: {

@@ -9,7 +9,6 @@ const nextConfig = {
   assetPrefix: process.env.GH_PAGES_BASE ? `/${process.env.GH_PAGES_BASE}/` : undefined,
   basePath: process.env.GH_PAGES_BASE ? `/${process.env.GH_PAGES_BASE}` : undefined,
   images: { unoptimized: true }, // required for static export
-  eslint: { ignoreDuringBuilds: false },
   typescript: { ignoreBuildErrors: false },
 };
 

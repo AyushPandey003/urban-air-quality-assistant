@@ -4,7 +4,10 @@
  */
 
 export function speak(text: string, onEnd?: () => void): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) { onEnd?.(); return; }
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onEnd?.();
+    return;
+  }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.onend = () => onEnd?.();
@@ -27,6 +30,7 @@ export interface SpeechRecognitionLike {
   stop: () => void;
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onerror: (() => void) | null;
+  onend: (() => void) | null;
 }
 
 export function createRecognizer(): SpeechRecognitionLike | null {
@@ -35,14 +39,21 @@ export function createRecognizer(): SpeechRecognitionLike | null {
     (window as unknown as Record<string, unknown>).webkitSpeechRecognition ??
     (window as unknown as Record<string, unknown>).SpeechRecognition;
   if (typeof Ctor !== 'function') return null;
-  return new (Ctor as new () => SpeechRecognitionLike)();
+  try {
+    return new (Ctor as new () => SpeechRecognitionLike)();
+  } catch {
+    return null;
+  }
 }
 
 /** Tiny rule-based NLU: maps transcript -> { intent, params }. */
-export function parseIntent(transcript: string): { intent: 'aqi' | 'advisory' | 'forecast' | 'unknown' } {
+export function parseIntent(transcript: string): {
+  intent: 'aqi' | 'advisory' | 'forecast' | 'unknown';
+} {
   const t = transcript.toLowerCase();
-  if (/(forecast|tomorrow|prediction|predict)/.test(t)) return { intent: 'forecast' };
-  if (/(advice|advisory|should i|can i|run|jog|outside|walk)/.test(t)) return { intent: 'advisory' };
+  if (/(forecast|tomorrow|prediction|predict|outlook)/.test(t)) return { intent: 'forecast' };
+  if (/(advice|advisory|should i|can i|run|jog|outside|walk)/.test(t))
+    return { intent: 'advisory' };
   if (/(air|quality|aqi|pollution|pollutant)/.test(t)) return { intent: 'aqi' };
   return { intent: 'unknown' };
 }

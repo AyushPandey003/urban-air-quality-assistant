@@ -10,3 +10,6 @@ next-env.d.ts.tmp
 !.env.example
 .env*.local
 coverage/
+playwright-report/
+test-results/
+public/vendor/
