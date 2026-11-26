@@ -1,0 +1,55 @@
+name: Deploy Pages and refresh OpenAQ every 6 hours
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Retrieve previous published snapshot for partial-upstream-failure fallback
+        env:
+          SNAPSHOT_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/air-quality.json
+        run: |
+          mkdir -p public/data
+          if curl --fail --silent --show-error --max-time 30 "$SNAPSHOT_URL" -o /tmp/previous-snapshot.json; then
+            node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('/tmp/previous-snapshot.json')); if(!Array.isArray(d.cities)) process.exit(1)"
+            cp /tmp/previous-snapshot.json public/data/air-quality.json
+          fi
+      - name: Refresh all city readings and hourly histories
+        env:
+          OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
+        run: node scripts/refresh-data.mjs
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build static site
+        env:
+          GH_PAGES_BASE: ${{ github.event.repository.name }}
+        run: npm run export
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
